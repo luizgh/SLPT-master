@@ -4,7 +4,7 @@ import os.path
 from slpt.config import cfg
 from slpt.config import update_config
 
-from slpt.utils import create_logger
+from slpt.utils import create_logger, crop_v2
 from slpt.SLPT import Sparse_alignment_network
 from slpt.dataloader import WFLW_test_Dataset
 
@@ -69,13 +69,13 @@ def crop_img(img, bbox, transform):
                 math.ceil(y2) - math.floor(y1)) / 200.0
 
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-    input, trans = utils.crop_v2(img, center, scale * 1.15, (256, 256))
+    input, trans = crop_v2(img, center, scale * 1.15, (256, 256))
 
     input = transform(input).unsqueeze(0)
 
     return input, trans
 
-def face_detection(img, model, im_width, im_height):
+def face_detection(img, model, im_width, im_height, device, confidence_threshold, top_k, keep_top_k, nms_threshold):
     img = cv2.resize(img, (320, 240), interpolation=cv2.INTER_NEAREST)
     img = np.float32(img)
     img = img.transpose(2, 0, 1)
@@ -109,30 +109,30 @@ def face_detection(img, model, im_width, im_height):
     scores = np.sqrt(cls_scores * iou_scores)
 
     # ignore low scores
-    inds = np.where(scores > args.confidence_threshold)[0]
+    inds = np.where(scores > confidence_threshold)[0]
     boxes = boxes[inds]
     scores = scores[inds]
 
     # keep top-K before NMS
-    order = scores.argsort()[::-1][:args.top_k]
+    order = scores.argsort()[::-1][:top_k]
     boxes = boxes[order]
     scores = scores[order]
 
     # do NMS
     dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
     selected_idx = np.array([0, 1, 2, 3, 14])
-    keep = facedetector.nms(dets[:, selected_idx], args.nms_threshold)
+    keep = facedetector.nms(dets[:, selected_idx], nms_threshold)
     dets = dets[keep, :]
 
     # keep top-K faster NMS
-    dets = dets[:args.keep_top_k, :]
+    dets = dets[:keep_top_k, :]
 
     return dets
 
-def find_max_box(box_array):
+def find_max_box(dets, vis_thres):
     potential_box = []
     for b in dets:
-        if b[14] < args.vis_thres:
+        if b[14] < vis_thres:
             continue
         potential_box.append(np.array([b[0], b[1], b[2], b[3], b[14]], dtype=np.int))
 
@@ -146,7 +146,7 @@ def find_max_box(box_array):
             if temp_box >= Max_box:
                 Max_box = temp_box
                 Max_index = index
-        return box_array[Max_index]
+        return dets[Max_index]
     else:
         return None
 
@@ -203,8 +203,8 @@ if __name__ == '__main__':
 
     all_landmarks = []
 
-    dets = face_detection(frame.copy(), net, 320, 240)
-    bbox = find_max_box(dets)
+    dets = face_detection(frame.copy(), net, 320, 240, device, args.confidence_threshold, args.top_k, args.keep_top_k, args.nms_threshold)
+    bbox = find_max_box(dets, args.vis_thres)
 
     if bbox is not None:
         bbox[0] = int(bbox[0] / 320.0 * im_width + 0.5)
