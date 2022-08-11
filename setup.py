@@ -8,5 +8,5 @@ setup(name='slpt',
       version='1.0',
 
       python_requires='>=3',
-      packages=find_packages(),
+      packages=['slpt'],
       )
