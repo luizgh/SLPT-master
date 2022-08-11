@@ -1,12 +1,12 @@
 import argparse
 import os.path
 
-from Config import cfg
-from Config import update_config
+from config import cfg
+from config import update_config
 
 from utils import create_logger
 from SLPT import Sparse_alignment_network
-from Dataloader import WFLW_test_Dataset
+from dataloader import WFLW_test_Dataset
 
 import torch, cv2, math
 import numpy as np
@@ -14,7 +14,7 @@ import pprint
 
 import torchvision.transforms as transforms
 import torch.backends.cudnn as cudnn
-import Face_Detector
+import facedetector
 import utils
 
 def parse_args():
@@ -88,11 +88,11 @@ def face_detection(img, model, im_width, im_height):
     loc, conf, iou = model(img)
 
     # post processing
-    priorbox = Face_Detector.PriorBox(Face_Detector.cfg, image_size=(im_height, im_width))
+    priorbox = facedetector.PriorBox(facedetector.cfg, image_size=(im_height, im_width))
     priors = priorbox.forward()
     priors = priors.to(device)
     prior_data = priors.data
-    boxes = Face_Detector.decode(loc.data.squeeze(0), prior_data, Face_Detector.cfg['variance'])
+    boxes = facedetector.decode(loc.data.squeeze(0), prior_data, facedetector.cfg['variance'])
     boxes = boxes * scale
     boxes = boxes.cpu().numpy()
     cls_scores = conf.squeeze(0).data.cpu().numpy()[:, 1]
@@ -117,7 +117,7 @@ def face_detection(img, model, im_width, im_height):
     # do NMS
     dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
     selected_idx = np.array([0, 1, 2, 3, 14])
-    keep = Face_Detector.nms(dets[:, selected_idx], args.nms_threshold)
+    keep = facedetector.nms(dets[:, selected_idx], args.nms_threshold)
     dets = dets[keep, :]
 
     # keep top-K faster NMS
@@ -160,8 +160,8 @@ if __name__ == '__main__':
     torch.backends.cudnn.enabled = True
 
     # load face detector
-    net = Face_Detector.YuFaceDetectNet(phase='test', size=None)  # initialize detector
-    net = Face_Detector.load_model(net, args.trained_model, True)
+    net = facedetector.YuFaceDetectNet(phase='test', size=None)  # initialize detector
+    net = facedetector.load_model(net, args.trained_model, True)
     net.eval()
     net = net.to(device)
     print('Finished loading Face Detector!')

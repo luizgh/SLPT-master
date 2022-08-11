@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from Backbone import get_face_alignment_net
+from slpt.backbone import get_face_alignment_net
 
 from .Transformer import Transformer
 from .interpolation import interpolation_layer

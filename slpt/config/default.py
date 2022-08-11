@@ -16,7 +16,7 @@ _C.PRINT_FREQ = 10
 
 
 _C.DATASET = CN()
-_C.DATASET.ROOT = "./Dataloader"
+_C.DATASET.ROOT = "./dataloader"
 _C.DATASET.CHANNEL = 3
 _C.DATASET.DATASET = 'WFLW'
 
@@ -41,7 +41,7 @@ _C.MODEL.TRAINABLE = True
 _C.MODEL.INTER_LAYER = True
 _C.MODEL.DILATION = False
 _C.MODEL.EMBEDDING = 'v2'
-_C.MODEL.PRETRAINED = "./Config/HRNetW18C_lite.pth"
+_C.MODEL.PRETRAINED = "./config/HRNetW18C_lite.pth"
 _C.MODEL.INIT_WEIGHTS = True
 _C.MODEL.NUM_BLOCK = 2
 _C.MODEL.SAMPLE_NUM = 7
@@ -69,7 +69,7 @@ _C.WFLW = CN()
 _C.WFLW.ROOT = './Dataset/WFLW'
 _C.WFLW.NUM_POINT = 98
 _C.WFLW.FRACTION = 1.20
-_C.WFLW.INITIAL_PATH = './Config/init_98.npz'
+_C.WFLW.INITIAL_PATH = './config/init_98.npz'
 
 # High-Resoluion Net
 _C.MODEL.EXTRA = CN()

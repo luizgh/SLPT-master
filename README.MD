@@ -2,7 +2,7 @@
 
 PyTorch evaluation code and pretrained models for **SLPT** (Sparse Local Patch Transformer).
 
-<img src='Figures/overview.jpg' width="1000px">
+<img src='slpt/Figures/overview.jpg' width="1000px">
 
 ## Installation
 #### Note: this released version was tested on Python3.8, Pytorch 1.10.2 and Windows 11.
@@ -11,6 +11,13 @@ Install python dependencies:
 ```
 pip3 install -r requirements.txt
 ```
+
+Install the package:
+
+```
+python setup.py install
+``` 
+
 
 ## Run Evaluation on WFLW dataset
 1. Download and process WFLW dataset
@@ -82,11 +89,11 @@ pip3 install -r requirements.txt
 
 We also provide a video demo script.
 
-<img src='Figures/Video1.gif' width="500px">
+<img src='slpt/Figures/Video1.gif' width="500px">
 
-<img src='Figures/Video2.gif' width="500px">
+<img src='slpt/Figures/Video2.gif' width="500px">
 
-<img src='Figures/Video3.gif' width="500px">
+<img src='slpt/Figures/Video3.gif' width="500px">
 
 1. Download [face detector](https://github.com/ShiqiYu/libfacedetection.train), copy the weight 
 ```yunet_final.pth``` to ```./Weight/Face_Detector/```

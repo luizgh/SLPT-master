@@ -1,12 +1,12 @@
 import argparse
 import os.path
 
-from Config import cfg
-from Config import update_config
+from config import cfg
+from config import update_config
 
 from utils import create_logger
 from SLPT import Sparse_alignment_network
-from Dataloader import WFLW_test_Dataset
+from dataloader import WFLW_test_Dataset
 
 import torch
 import numpy as np

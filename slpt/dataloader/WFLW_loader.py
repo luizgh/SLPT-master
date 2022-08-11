@@ -1,7 +1,7 @@
 import cv2, copy, logging, os
 import numpy as np
 
-import utils
+from slpt import utils
 
 from torch.utils.data import Dataset
 

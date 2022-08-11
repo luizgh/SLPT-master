@@ -4,7 +4,7 @@ import torch
 from torch import nn, Tensor
 from typing import Optional
 
-from utils import _get_activation_fn
+from slpt.utils import _get_activation_fn
 
 
 def _get_clones(module, N):
