@@ -15,7 +15,7 @@ import pprint
 import torchvision.transforms as transforms
 import torch.backends.cudnn as cudnn
 from slpt import facedetector
-import utils
+from slpt utils
 from tqdm import trange
 
 def parse_args():
