@@ -1,6 +1,7 @@
 import argparse
 import os.path
 
+import slpt
 from slpt.config import cfg
 from slpt.config import update_config
 
@@ -15,18 +16,21 @@ import pprint
 import torchvision.transforms as transforms
 import torch.backends.cudnn as cudnn
 from slpt import facedetector
-from slpt utils
+from slpt import utils
 from tqdm import trange
+from pathlib import Path
+import libfacedetection
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Process a single image')
 
     # face detector
-    parser.add_argument('-m', '--trained_model', default='./Weight/Face_Detector/yunet_final.pth',
+    parser.add_argument('-m', '--trained_model',
                         type=str, help='Trained state_dict file path to open')
     parser.add_argument('--input', type=str, help='the image file to be detected')
     parser.add_argument('--output', required=True, type=str, help='path to save the img to')
-    parser.add_argument('--output-landmarks', required=True, type=str, help='path to save the landmarks to')
+    parser.add_argument('--output-landmarks', type=str, help='path to save the landmarks to')
     parser.add_argument('--last-frame',  type=int, help='only process this many frames')
     parser.add_argument('--confidence_threshold', default=0.7, type=float, help='confidence_threshold')
     parser.add_argument('--top_k', default=5000, type=int, help='top_k')
@@ -38,7 +42,7 @@ def parse_args():
 
     # landmark detector
     parser.add_argument('--modelDir', help='model directory', type=str, default='./Weight')
-    parser.add_argument('--checkpoint', help='checkpoint file', type=str, default='WFLW_12_layer.pth')
+    parser.add_argument('--checkpoint', help='checkpoint file', type=str)
     parser.add_argument('--logDir', help='log directory', type=str, default='./log')
     parser.add_argument('--dataDir', help='data directory', type=str, default='./')
     parser.add_argument('--prevModelDir', help='prev Model directory', type=str, default=None)
@@ -151,6 +155,21 @@ def find_max_box(dets, vis_thres):
         return None
 
 
+def get_or_download_model():
+    import gdown
+    try:
+        from torch.hub import get_dir
+    except BaseException:
+        from torch.hub import _get_torch_home as get_dir
+
+    hub_dir = Path(get_dir())
+    model_path = hub_dir / 'checkpoints/slpt_12.pth'
+    if not model_path.exists():
+        model_path.parent.mkdir(exist_ok=True)
+        logger.warning('Downloading SLPT model (GPL)')
+        gdown.download(id='1fBBHqVSW4XQ_eB3ClYv4mS2pYmRWPuFJ', output=str(model_path))
+    return model_path
+
 if __name__ == '__main__':
     args = parse_args()
     update_config(cfg, args)
@@ -164,8 +183,12 @@ if __name__ == '__main__':
     torch.backends.cudnn.enabled = True
 
     # load face detector
+    initial_landmarks_path = Path(slpt.__file__).parent / 'config/init_98.npz'
     net = facedetector.YuFaceDetectNet(phase='test', size=None)  # initialize detector
-    net = facedetector.load_model(net, args.trained_model, True)
+    face_detector_model = Path(libfacedetection.__file__).parent / 'tasks/task1/weights/yunet_final.pth'
+    net = facedetector.load_model(net, face_detector_model, True)
+
+
     net.eval()
     net = net.to(device)
     print('Finished loading Face Detector!')
@@ -173,11 +196,12 @@ if __name__ == '__main__':
     model = Sparse_alignment_network(cfg.WFLW.NUM_POINT, cfg.MODEL.OUT_DIM,
                                      cfg.MODEL.TRAINABLE, cfg.MODEL.INTER_LAYER,
                                      cfg.MODEL.DILATION, cfg.TRANSFORMER.NHEAD,
-                                     cfg.TRANSFORMER.FEED_DIM, cfg.WFLW.INITIAL_PATH, cfg)
+                                     cfg.TRANSFORMER.FEED_DIM, initial_landmarks_path, cfg)
     model = torch.nn.DataParallel(model, device_ids=cfg.GPUS).cuda()
 
-    checkpoint_file = os.path.join(args.modelDir, args.checkpoint)
-    checkpoint = torch.load(checkpoint_file)
+
+    model_path = get_or_download_model()
+    checkpoint = torch.load(model_path)
     pretrained_dict = {k: v for k, v in checkpoint.items()
                        if k in model.module.state_dict().keys()}
     model.module.load_state_dict(pretrained_dict)
@@ -225,4 +249,6 @@ if __name__ == '__main__':
         cv2.imwrite(args.output, frame)
 
     all_landmarks = np.stack(all_landmarks)
-    np.save(args.output_landmarks, all_landmarks)
+    if args.output_landmarks is not None:
+        np.save(args.output_landmarks, all_landmarks)
+
